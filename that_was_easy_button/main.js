@@ -1,6 +1,8 @@
 function sayThatWasEasy() {
     var thatWasEasy = new Audio("that_was_easy.mp3");
     thatWasEasy.play();
+    document.body.style.backgroundColor= "green";
+    document.body.style.backgroundColor= "blue";
 }
 
 $("#easy").on("click", sayThatWasEasy);
@@ -15,3 +17,5 @@ function delegateKeypress(event){
     
     
 }
+
+// <button type="button" onclick="myfunction()">Change Color</button
