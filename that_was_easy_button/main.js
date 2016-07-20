@@ -1,8 +1,11 @@
+var myColors= ['blue', 'green', 'red', 'pink']
+var index = 0 
 function sayThatWasEasy() {
     var thatWasEasy = new Audio("that_was_easy.mp3");
     thatWasEasy.play();
-    document.body.style.backgroundColor= "green";
-    document.body.style.backgroundColor= "blue";
+    document.body.style.backgroundColor= myColors[index]
+    // index = index +1
+    index = (index +1)%4
 }
 
 $("#easy").on("click", sayThatWasEasy);
