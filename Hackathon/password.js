@@ -25,7 +25,7 @@ function pad (str, max) {
   return str.length < max ? pad("0" + str, max) : str;
 }
 
-for (i = 0; i < 9999; i++) {
+for (i = 0; i < 10000; i++) {
 var num = i
 var n = num.toString();
 
@@ -39,23 +39,25 @@ console.log(pad(i, 4));
 	console.log(String.fromCharCode(i));
 }
  
+
 var array = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'z'];
 
 for (var i = 0; i < array.length; i++) {
-  var first = array[i];
+	var first = array[i];
 
-  for (var j = 0; j < array.length; j++) {
-    var second = array[j];
-	
-	for (var k = 0; k < array.length; k++) {
-	var third = array[k];
+	for (var j = 0; j < array.length; j++) {
+		var second = array[j];
 
-	for (var w = 0; w < array.length; w++) {
-	var fourth = array[w];
-    console.log(first + second + third + fourth);
-}
-}
-  }
+		for (var k = 0; k < array.length; k++) {
+			var third = array[k];
+
+			for (var w = 0; w < array.length; w++) {
+				var fourth = array[w];
+
+				console.log(first + second + third + fourth);
+			}
+		}
+	}
 }
 
 var passhash = CryptoJS.MD5('rameen').toString();
