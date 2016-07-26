@@ -1,7 +1,7 @@
 
 
 body {
-    background-image: url("m4.jp4");
+    background-image: url("m4.jpg");
     background-repeat: no-repeat;
     background-attachment:fixed;
     
@@ -10,7 +10,6 @@ body {
 
 #container {
     justify-content:center;
-    background: url("m4.jpg");
     height: 300px;
   position: relative;
 }
