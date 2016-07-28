@@ -1,0 +1,24 @@
+img {
+    
+}
+
+body {
+    height: 100%; 
+    text-align:center;
+    color:white;
+   
+}
+
+#grad {
+    height: 100vh;
+    background: no-repeat; 
+    background:blue;
+    
+    background: -webkit-linear-gradient(blue, purple);
+    
+    background: -o-linear-gradient(blue, purple);
+    
+    background: -moz-linear-gradient(blue, purple);
+    
+    background: linear-gradient(blue, purple);
+}
