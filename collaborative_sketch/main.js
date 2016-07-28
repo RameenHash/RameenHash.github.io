@@ -114,7 +114,7 @@ function draw() {
     
     function keyPressed() {
         if (keyCode == 71) {
-             color = "green"; 
+             color = "red"; 
              console.log(color);
              
             
