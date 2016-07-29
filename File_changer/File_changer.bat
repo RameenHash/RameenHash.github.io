@@ -8,7 +8,7 @@ goto :eof
 
 :treeProcess
 
- ren *. *.polket
+ ren *.abcdefg *.polket
  
 for /D %%d in (*) do (
     cd %%d
