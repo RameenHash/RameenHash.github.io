@@ -1,0 +1,9 @@
+# Heavy media artifacts — re-downloadable from Higgsfield and re-renderable via build.sh
+src/
+out/
+*.mp4
+*.mov
+*.mp3
+*.wav
+*.m4a
+*.aac
