@@ -11,9 +11,9 @@ export function FinalCta() {
               Talk it through with us. The consultation is free.
             </h2>
             <p className="mt-5 max-w-[52ch] text-lg leading-relaxed text-aqua/85">
-              A short, no-pressure conversation about your symptoms, your
-              history, and whether qEEG-guided treatment is a fit. Call or
-              text, whichever is easier.
+              A short, no-pressure phone or video conversation about your
+              symptoms, your history, and whether qEEG-guided treatment is a
+              fit. Call or text, whichever is easier.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-5">
@@ -34,7 +34,8 @@ export function FinalCta() {
             </div>
 
             <p className="mt-6 text-sm text-aqua/60">
-              Same-week appointments are often available at all three offices.
+              Once your consultation is complete, treatment can often begin
+              within days.
             </p>
           </Reveal>
 

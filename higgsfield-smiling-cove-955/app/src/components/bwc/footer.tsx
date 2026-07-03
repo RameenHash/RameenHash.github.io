@@ -18,7 +18,7 @@ export function Footer() {
             </div>
             <p className="mt-3 max-w-[40ch] text-sm leading-relaxed text-aqua/60">
               qEEG brain mapping and personalized neuromodulation therapy in
-              San Ramon, Roseville, and Belmont, California.
+              San Ramon, San Jose, and Modesto, California.
             </p>
             <a
               href="tel:+19258371100"

@@ -26,9 +26,10 @@ export function Financing() {
                 In-network insurance
               </h3>
               <p className="mt-2 text-base leading-relaxed text-body">
-                Brain Wellness Center is in-network with most major commercial
-                insurance plans in California. Our team verifies your benefits
-                before treatment begins, so costs are clear up front.
+                TMS treatment for medication-resistant depression is in-network
+                with most major California commercial plans, including Anthem,
+                Blue Shield, Aetna, Cigna, United, and Optum. We verify your
+                benefits before treatment begins, so costs are clear up front.
               </p>
             </div>
           </Reveal>
@@ -39,9 +40,9 @@ export function Financing() {
                 CareCredit financing
               </h3>
               <p className="mt-2 text-base leading-relaxed text-body">
-                For services insurance does not cover, we accept CareCredit,
-                a healthcare credit line that lets you spread treatment costs
-                over monthly payments.
+                Other services are self-pay, and we accept CareCredit: monthly
+                payments on treatment costs of $1,000 or more, with a 12-month
+                no-interest option and longer low-interest terms.
               </p>
             </div>
           </Reveal>

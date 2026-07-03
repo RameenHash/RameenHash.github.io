@@ -8,15 +8,15 @@ export function Hero() {
   const reduce = useReducedMotion();
   return (
     <section id="top" className="relative overflow-hidden">
-      <div className="mx-auto grid max-w-[1200px] items-center gap-10 px-4 pb-16 pt-10 sm:px-6 lg:grid-cols-[7fr_5fr] lg:gap-14 lg:pb-24 lg:pt-16">
+      <div className="mx-auto grid max-w-[1200px] items-center gap-10 px-4 pb-10 pt-8 sm:px-6 lg:grid-cols-[7fr_5fr] lg:gap-14 lg:pb-14 lg:pt-12">
         <div>
           <motion.h1
             initial={reduce ? false : { opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: EASE }}
-            className="bwc-display max-w-[14ch] text-4xl font-semibold leading-[1.05] text-ink sm:text-5xl lg:text-6xl"
+            className="bwc-display max-w-[22ch] text-4xl font-semibold leading-[1.05] text-ink sm:text-5xl lg:text-6xl"
           >
-            Lasting relief starts with a map of your brain.
+            Relief starts with a map of your brain.
           </motion.h1>
 
           <ClientOnly fallback={<div className="mt-5 h-10 w-full max-w-md" />}>
@@ -67,7 +67,7 @@ export function Hero() {
               width={1280}
               height={720}
               fetchPriority="high"
-              className="aspect-[4/3] w-full object-cover lg:aspect-[5/6]"
+              className="aspect-[4/3] w-full object-cover object-[70%_center] lg:aspect-[5/6]"
             />
           </div>
         </motion.div>

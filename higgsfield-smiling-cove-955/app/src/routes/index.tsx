@@ -46,6 +46,42 @@ const CLINIC_SCHEMA = {
   telephone: "+1-925-837-1100",
   medicalSpecialty: ["Psychiatry", "Neurology"],
   description: DESCRIPTION,
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "5401 Norris Canyon Rd, Suite 304",
+    addressLocality: "San Ramon",
+    addressRegion: "CA",
+    postalCode: "94583",
+    addressCountry: "US",
+  },
+  department: [
+    {
+      "@type": "MedicalClinic",
+      name: "Brain Wellness Center San Jose",
+      telephone: "+1-408-740-3100",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "3031 Tisch Way, Suite 309",
+        addressLocality: "San Jose",
+        addressRegion: "CA",
+        postalCode: "95128",
+        addressCountry: "US",
+      },
+    },
+    {
+      "@type": "MedicalClinic",
+      name: "Brain Wellness Center Modesto",
+      telephone: "+1-209-253-1700",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "1524 McHenry Ave, Suite 415",
+        addressLocality: "Modesto",
+        addressRegion: "CA",
+        postalCode: "95350",
+        addressCountry: "US",
+      },
+    },
+  ],
 };
 
 function HomePage() {

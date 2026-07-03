@@ -13,7 +13,7 @@ const STEPS = [
   },
   {
     title: "Treat",
-    body: "Gentle magnetic pulses stimulate those circuits in brief office sessions. You sit back, fully awake, and most people return straight to their day.",
+    body: "Gentle magnetic pulses from FDA-cleared TMS equipment stimulate those circuits in brief office visits. You sit back, fully awake, and most people return straight to their day. A typical course runs 30 to 40 sessions over 6 to 8 weeks.",
   },
   {
     title: "Re-measure",

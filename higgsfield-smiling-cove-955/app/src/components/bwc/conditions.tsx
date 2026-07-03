@@ -1,18 +1,20 @@
 import {
+  ArrowsClockwise,
   Brain,
+  ChatCircleDots,
   CloudRain,
   Ear,
   HeadCircuit,
+  Lifebuoy,
   Lightning,
   MoonStars,
   Person,
-  Puzzle,
-  ArrowsClockwise,
+  PuzzlePiece,
   ShieldWarning,
   Sparkle,
   TextAa,
 } from "@phosphor-icons/react";
-import { Reveal, RevealGroup } from "./reveal";
+import { Reveal } from "./reveal";
 
 const CONDITIONS = [
   {
@@ -28,7 +30,7 @@ const CONDITIONS = [
     featured: true,
   },
   { icon: HeadCircuit, name: "ADHD", blurb: "Focus and follow-through, mapped and trained." },
-  { icon: Puzzle, name: "Autism", blurb: "Support for regulation, language, and connection." },
+  { icon: PuzzlePiece, name: "Autism", blurb: "Support for regulation, language, and connection." },
   { icon: Ear, name: "Auditory Processing", blurb: "When hearing is fine but understanding is hard." },
   { icon: ArrowsClockwise, name: "OCD", blurb: "Interrupt looping thought and behavior cycles." },
   { icon: ShieldWarning, name: "PTSD & Trauma", blurb: "Calm a brain stuck in high alert." },
@@ -37,6 +39,8 @@ const CONDITIONS = [
   { icon: Person, name: "Bipolar Disorder", blurb: "Steadier ground between the highs and lows." },
   { icon: MoonStars, name: "Insomnia", blurb: "Retrain the rhythms that healthy sleep needs." },
   { icon: Sparkle, name: "Memory & Cognition", blurb: "Sharpen recall, clarity, and processing speed." },
+  { icon: Lifebuoy, name: "Addiction", blurb: "Address the brain patterns beneath the craving." },
+  { icon: ChatCircleDots, name: "Language & Sensory Delays", blurb: "Early support for processing and speech." },
 ];
 
 export function Conditions() {
@@ -55,20 +59,22 @@ export function Conditions() {
         </p>
       </Reveal>
 
-      <RevealGroup
-        className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-        stagger={0.05}
-        items={CONDITIONS.map((c) => {
+      <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {CONDITIONS.map((c, i) => {
           const Icon = c.icon;
           return (
-            <div
+            <Reveal
               key={c.name}
-              className={
-                c.featured
-                  ? "flex h-full flex-col justify-between rounded-2xl bg-ink p-6 sm:col-span-2 lg:col-span-2"
-                  : "flex h-full flex-col rounded-2xl border border-ink/8 bg-white/70 p-6"
-              }
+              delay={(i % 4) * 0.05}
+              className={c.featured ? "sm:col-span-2" : undefined}
             >
+              <div
+                className={
+                  c.featured
+                    ? "flex h-full flex-col justify-between rounded-2xl bg-ink p-6"
+                    : "flex h-full flex-col rounded-2xl border border-ink/8 bg-white/70 p-6"
+                }
+              >
               <Icon
                 size={28}
                 weight="duotone"
@@ -95,10 +101,11 @@ export function Conditions() {
                   {c.blurb}
                 </p>
               </div>
-            </div>
+              </div>
+            </Reveal>
           );
         })}
-      />
+      </div>
 
       <Reveal delay={0.1}>
         <p className="mt-8 text-sm text-body">
