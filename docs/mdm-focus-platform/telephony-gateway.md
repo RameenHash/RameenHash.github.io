@@ -57,6 +57,36 @@ flowchart LR
   Agent["Device agent (Android)\noutbound calls via Voice SDK\nSMS UI with true sender"] <--> GW
 ```
 
+## What runs where: our server vs the provider
+
+A phone number must be hosted by a licensed carrier — a server cannot connect to the
+PSTN directly. So the provider's involvement is a regulatory necessity, but its role
+can be reduced to a dumb pipe: **all policy, storage, and state live on our server**
+(DND flags, whitelist, the message vault, voicemail recordings, call logs). The
+provider holds the number and executes instructions.
+
+Call flow: caller dials the real number → carrier routes to the provider (the number
+lives there) → provider hits **our server** with a webhook and waits → our server
+checks DND state + whitelist → replies with an instruction ("bridge to shadow number"
+or "play greeting, record voicemail") → provider executes. Inbound SMS: webhook → our
+DB → relay now or hold-and-release. The provider never keeps the vault.
+
+Two integration levels:
+
+| | **Level 1 — managed (webhook mode)** | **Level 2 — self-hosted (SIP trunk mode)** |
+|---|---|---|
+| Provider does | Hosts number, carries call **audio**, executes our instructions | Hosts number, delivers raw SIP only |
+| Our server does | Every decision + all storage (pull recordings to our own storage immediately) | Everything including media: our PBX (Asterisk/FreeSWITCH) answers, plays greetings, records, bridges |
+| Ops burden | Low — no media servers | Real telecom ops: media, codecs, NAT traversal — **and uptime is now our problem** |
+| Ownership | ~95% — provider transits audio | Full "my server is the call center" |
+
+**Decision: build Phase 1 in Level 1 (webhook mode)**, with the gateway code behind a
+thin provider interface so a Level 2 SIP/FreeSWITCH backend can be swapped in later
+without touching policy logic (Telnyx sells plain SIP trunking cheaply for that path).
+Either level keeps the fail-open rule: if our server doesn't answer within a few
+seconds, the provider falls through to the shadow number — an outage degrades to
+"normal phone," never to "child unreachable."
+
 Implementation sketch:
 - **Provider:** Twilio (fastest to build: Programmable Voice + Messaging, number
   porting, SIP domains) — Telnyx/SignalWire as cost-optimized alternatives.
