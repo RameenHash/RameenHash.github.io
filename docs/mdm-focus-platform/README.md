@@ -8,26 +8,32 @@ through and notify. Texts are invisible to the student until the mode ends, then
 Research date: August 2026. Deep dives with sources:
 - [iOS platform capabilities](./ios-platform-capabilities.md)
 - [Android platform capabilities](./android-platform-capabilities.md)
+- [Telephony gateway (number-in-the-cloud) design](./telephony-gateway.md) — **adopted
+  Aug 2026 as the primary calls/texts mechanism for both platforms**
 
 ---
 
-## 1. The honest feasibility verdict
+## 1. The feasibility verdict (with the telephony gateway adopted)
+
+The **telephony gateway** ([design](./telephony-gateway.md)) hosts the student's real
+phone number in the cloud; the SIM carries a secret shadow number. All calls and texts
+hit our server first, where DND policy is applied — identically on both platforms,
+upstream of the device.
 
 | Requirement | Android (fully managed) | iOS (supervised MDM) |
 |---|---|---|
-| Block all apps except whitelist | ✅ Solid (`setPackagesSuspended` + kiosk) | ✅ Solid (`allowListedAppBundleIDs`) |
-| Whitelist-only incoming calls, emergency always through | ✅ Solid (`CallScreeningService`) | ❌ **No API.** Only Apple's own Screen Time Communication Limits (no API/MDM access) or carrier/MVNO-level blocking |
-| Texts invisible until mode ends, then appear | ✅ For SMS/MMS (custom default SMS app). ⚠️ RCS must be disabled + Google Messages blocked | ⚠️ Suppress-only: no banner/sound/badge and Messages app hidden — but delivery can't be delayed; backlog appears when mode ends. No hold of iMessage/SMS is possible, period |
-| Student cannot bypass | ✅ Solid on Android 15+/locked bootloader + zero-touch | ✅ Solid with ADE + supervision + non-removable enrollment |
+| Block all apps except whitelist | ✅ On-device: `setPackagesSuspended` + kiosk | ✅ On-device: `allowListedAppBundleIDs` |
+| Whitelist-only incoming calls, emergency always through | ✅ **Gateway** (agent's `CallScreeningService` as defense-in-depth) | ✅ **Gateway** — closes the platform gap; no iOS API needed |
+| Texts invisible until mode ends, then appear | ✅ **Gateway holds them server-side** (agent SMS app for UI/threading + defense-in-depth) | ✅ **Gateway holds them server-side** — true holding, stronger than notification suppression |
+| Student cannot bypass | ✅ Android 15+/locked bootloader + zero-touch; DND itself is server-side, unbypassable from the device | ✅ ADE + supervision + non-removable enrollment; DND server-side |
 
-**Bottom line:** Android delivers 100% of the vision. iOS delivers the *experienced*
-behavior for apps and texts (the student sees nothing until the mode ends) but cannot
-block calls programmatically and cannot truly delay message delivery — Apple exposes no
-API for either, and every competitor that ships whitelist-only calling (Gabb, Troomi,
-Pinwheel, Bark Phone) did it by **going Android + carrier-level control**. Plan the
-flagship experience on Android; ship iOS as a strong-but-honest tier, and close the
-iOS call gap either with Apple's Family-Sharing Communication Limits (manual, outside
-your control) or an MVNO partnership (network-level allowlist — the only real fix).
+**Bottom line:** with calls/texts moved upstream to the gateway, both platforms deliver
+the full vision. On-device platform work narrows to app blocking + anti-bypass (both
+solid), plus the Android agent providing native dialer/SMS UX. The prior platform-API
+limits (iOS call blocking, iOS message delay, Android RCS bypass) are largely mooted
+because policy is applied before anything reaches the device — the residual risks are
+gateway-specific (shadow-number leakage, reply threading on iOS; see the
+[threat model](./telephony-gateway.md#threat-model--gotchas)).
 
 ---
 
@@ -35,6 +41,10 @@ your control) or an MVNO partnership (network-level allowlist — the only real 
 
 ```mermaid
 flowchart TB
+  Caller["Callers / texters\n(dial the REAL number)"] --> TelProvider["Telephony provider\n(real number hosted here)"]
+  TelProvider -->|webhooks| Gateway["Telephony gateway\nDND state · whitelist ·\nmessage vault · voicemail"]
+  Gateway -->|"DND off or whitelisted:\nbridge/relay to shadow number"| Devices(("Devices (SIM =\nsecret shadow number)"))
+
   subgraph Cloud["Backend (policy service)"]
     Console["Admin console (web)\nparents/org: schedules, whitelists,\nmanual DND toggle, reports"]
     API["Policy API + device check-in\n(Postgres: devices, policies,\nwhitelists, audit log)"]
@@ -49,18 +59,24 @@ flowchart TB
 
   subgraph AndroidDev["Android device (fully managed, zero-touch)"]
     ADP["Android Device Policy (Google DPC)\nroles + restrictions via AMAPI"]
-    Agent["Your agent app = launcher + default SMS app\n+ default dialer/call screener.\nEnforces Study Mode locally & offline"]
+    Agent["Your agent app = launcher + default SMS app\n+ default dialer/call screener.\nApp blocking locally & offline;\noutbound calls via gateway (real caller ID)"]
   end
 
   Console --> API --> Push
+  API <-->|"single DND source of truth"| Gateway
   API --> MDM
   MDM -->|"install/remove study profile"| StudyProfile
   MDM -->|"policy JSON"| ADP
   Push -->|"FCM: schedule changes, manual toggle"| Agent
+  Agent <-->|"SMS UI sync, outbound voice"| Gateway
 ```
 
 ### Components
 
+0. **Telephony gateway** — the backbone for calls/texts on both platforms. The real
+   number is ported to the provider; DND policy is applied server-side (bridge / hold /
+   voicemail / digest release). Full design, emergency-safety analysis, threat model,
+   and per-device cost: [telephony-gateway.md](./telephony-gateway.md).
 1. **Admin console (web)** — parents/org admins manage devices, whitelisted numbers,
    allowed apps, study schedules, manual on/off, and see reports (blocked-call counts,
    held-message counts, tamper events). Stack suggestion: Next.js + Supabase (auth,
@@ -118,19 +134,23 @@ depend on it.
 1. `setPackagesSuspended` on everything outside the allowlist — icons grey out; tapping
    shows a branded dialog ("Study mode until 4:30 PM"); notifications suppressed at
    delivery. Optional hard tier: lock task (kiosk) mode with launcher + dialer only.
-2. **Calls:** agent holds `ROLE_CALL_SCREENING` (forced by AMAPI
-   `defaultApplicationSettings`, user cannot change it). Non-whitelisted:
+2. **Calls (primary enforcement = gateway, upstream):** non-whitelisted calls to the
+   real number never reach the device during DND. The agent still holds
+   `ROLE_CALL_SCREENING` (forced by AMAPI `defaultApplicationSettings`) as
+   **defense-in-depth** for anything reaching the shadow number directly:
    `setDisallowCall + setRejectCall + setSkipCallLog + setSkipNotification` → fully
-   invisible (or `setSilenceCall` for a reviewable "held calls" list). Whitelisted:
-   pass through untouched. 5-second response budget → whitelist is a local table.
-3. **Texts:** agent is the **default SMS app** — it receives every SMS via
-   `SMS_DELIVER`, stores it encrypted, posts **no notification** during the mode, then
-   shows the digest ("4 messages while you were studying") when the mode ends.
-   Whitelisted senders' texts notify normally even during the mode.
-   **OTP carve-out:** parse held texts for verification codes and pass them through.
-4. **RCS:** Google Messages is `installType: BLOCKED` and RCS disabled on the SKU —
-   otherwise RCS silently bypasses the hold (only Google Messages can use Android's
-   RCS API). Senders fall back to SMS.
+   invisible. 5-second response budget → whitelist is a local table. The agent-as-dialer
+   also routes **outbound** calls through the gateway so caller ID shows the real
+   number (prevents shadow-number leakage).
+3. **Texts (primary enforcement = gateway):** held server-side during DND, digest on
+   release. The agent remains the **default SMS app** for the UI — it renders
+   gateway-delivered messages with the true sender (correct threading), sends replies
+   back through the gateway, and silently vaults any SMS that hits the shadow number
+   directly via `SMS_DELIVER`. **OTP carve-out** lives in the gateway.
+4. **RCS:** mostly mooted — a VoIP-hosted real number can't register RCS, so senders
+   fall back to SMS into the gateway. Still block Google Messages
+   (`installType: BLOCKED`) and disable RCS on the SKU so the *shadow* number can't
+   become an RCS endpoint either.
 
 **Anti-bypass baseline (always on):** `DISALLOW_FACTORY_RESET`, `DISALLOW_SAFE_BOOT`,
 `DISALLOW_DEBUGGING_FEATURES`, `DISALLOW_CONFIG_DATE_TIME` + auto-time,
@@ -168,16 +188,18 @@ restrictions: no app removal, no erase, no profile installs, forced auto-time,
 Activation Lock) stays permanently. This remove-to-unlock design is fail-secure:
 going offline keeps the device locked.
 
-**Calls — the gap:** no iOS API blocks calls by whitelist (CallKit is blocklist-only
-and static; no MDM key exists; Focus modes have no API/MDM control). Options:
-1. **Communication Limits via Family Sharing** (Apple's built-in Screen Time feature
-   does exactly whitelist-only calls/texts during downtime) — but it has no API, must
-   be configured manually by the parent, and needs iCloud Family + iCloud contacts.
-   Verify on hardware that it coexists with MDM supervision.
-2. **MVNO/carrier partnership** — network-level inbound allowlist. The only
-   un-bypassable fix; how the kid-phone companies do it. Bonus: works identically for
-   Android and removes the RCS concern for held-text *senders*.
-3. Accept ring-through on iOS tier and set expectations.
+**Calls and texts — solved by the gateway.** No iOS API blocks calls by whitelist or
+delays message delivery (CallKit is blocklist-only and static; no MDM key exists;
+Focus modes have no API/MDM control) — but with the real number hosted at the
+[telephony gateway](./telephony-gateway.md), whitelist-only calling and true text
+holding happen upstream of the device, so no iOS API is needed. The study profile's
+notification-kill + app-hiding remains as defense-in-depth for anything that reaches
+the shadow number directly. Residual iOS-specific items: outbound native calls expose
+the shadow number as caller ID (mitigate with rotation + monitoring), and held-text
+delivery uses either proxy-number threading or our app's inbox.
+Fallback options if the gateway were ever abandoned: Apple's Communication Limits via
+Family Sharing (manual, no API; verify coexistence with MDM supervision) or an
+MVNO partnership.
 
 **Hard constraints to design around (verified):** MDM supervision and Screen Time
 API `.child` authorization are **mutually exclusive**; `.individual` Screen Time
@@ -189,28 +211,52 @@ timed server-side with margin, or DDM when Apple ships schedule predicates.
 
 ## 5. Build roadmap
 
+Re-ranked (Aug 2026) around the adopted **telephony gateway**: the gateway is now the
+first thing built — it delivers the calls/texts core of the product on both platforms
+at once, and it de-risks the project *before* the slow MDM paperwork (ABM, zero-touch,
+Play declarations) completes.
+
 **Phase 0 — de-risk (1–2 weeks of spikes, before any product code)**
-1. Verify AMAPI `DEFAULT_SMS` minimum Android version (16+?). Dictates hardware.
-2. Prototype: whitelisted call ringing through while in lock task mode + suspended apps.
-3. Prototype: custom default SMS app holding + digest release; test RCS-off fallback,
-   MMS download, OTP passthrough, `RECEIVE_SMS` leakage.
-4. iOS on real hardware: ADE profile swap latency; Communication Limits + MDM coexistence.
-5. Start the long-lead-time paperwork now: ABM (D-U-N-S), APNs MDM cert, zero-touch
+1. **Gateway spike (highest priority):** buy a test number on Twilio, build the webhook
+   policy loop (DND flag → bridge / hold / voicemail / digest release). Verify with a
+   real SIM as the shadow number: bridged call quality/latency, SMS relay, MMS.
+2. **Number-hosting checks:** port a sacrificial real number; confirm a VoIP-hosted
+   number cannot register RCS or iMessage (and deregister iMessage at port time);
+   confirm P2P relay classification with the provider (10DLC/A2P).
+3. **Emergency-path test:** outgoing 911-equivalent (provider test harness) uses the
+   SIM; PSAP-callback simulation rings the shadow number directly.
+4. Verify AMAPI `DEFAULT_SMS` minimum Android version (16+?) — still matters for the
+   agent's SMS-app role (UI/threading + defense-in-depth), and dictates hardware.
+5. Prototype on Android: whitelisted bridged call ringing through lock task mode +
+   suspended apps; agent-as-SMS-app store injection for digest delivery.
+6. iOS on real hardware: ADE profile swap latency for app blocking.
+7. Start the long-lead-time paperwork now: ABM (D-U-N-S), APNs MDM cert, zero-touch
    reseller relationship, Google Play SMS-permission declaration / managed-Play private
    app question, (parallel) Play Protect DPC allowlist appeal.
 
-**Phase 1 — Android MVP (the full vision)**
-Agent app (launcher + SMS + screening) with local schedule engine → AMAPI policy
-scaffolding → admin console (devices, whitelist, schedule, manual toggle) → digest UX
-+ held-calls review → anti-bypass hardening pass against the bypass table.
+**Phase 1 — Telephony gateway MVP (both platforms at once)**
+Gateway policy service (DND state, whitelist, schedules as the single source of truth)
+→ message vault + digest release + OTP passthrough → voicemail + held-call review →
+admin console v1 (devices, whitelist, schedule, manual DND toggle) → fail-open
+provider fallback (gateway outage ⇒ normal phone, never stuck-in-DND). **At the end of
+Phase 1 the core DND promise works on any phone, even before MDM enrollment ships.**
 
-**Phase 2 — iOS tier**
-MDM server (build on NanoMDM or license) → ADE flow → base + study profiles →
-profile-swap scheduler with latency margin → parent-guided Communication Limits setup
-flow (or MVNO integration if pursued).
+**Phase 2 — Android device tier (app blocking + native UX)**
+AMAPI fully-managed enrollment (zero-touch/QR) → agent app: launcher + local schedule
+engine + `setPackagesSuspended` study mode → agent as default SMS app/dialer synced to
+the gateway (true-sender threading, outbound calls presenting the real number) →
+anti-bypass hardening pass against the bypass table → fixed hardware SKU decision
+(Android 15+/16+, locked bootloader, RCS off).
 
-**Phase 3 — scale**
-MVNO evaluation, fleet dashboard, tamper alerting, multi-child/org accounts.
+**Phase 3 — iOS device tier (app blocking)**
+MDM server (build on NanoMDM or license) → ADE flow → base + study profiles
+(app allowlist + notification kill as defense-in-depth) → profile-swap scheduler with
+latency margin → shadow-number rotation tooling (iOS outbound caller-ID leak mitigation).
+
+**Phase 4 — scale**
+Proxy-number-per-contact threading for iOS, group-text handling, fleet dashboard,
+tamper alerting, multi-child/org accounts, MVNO evaluation (only if gateway economics
+or shadow-number leakage demand it).
 
 **Compliance notes:** this is only lawful/ethical for devices you own or manage with
 authority (your children as their guardian, or org-owned devices with disclosed
