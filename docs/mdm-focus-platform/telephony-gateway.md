@@ -87,6 +87,10 @@ Either level keeps the fail-open rule: if our server doesn't answer within a few
 seconds, the provider falls through to the shadow number — an outage degrades to
 "normal phone," never to "child unreachable."
 
+Implementation: **Phase 1 scaffold lives at [`/focus-gateway`](../../focus-gateway/)**
+(Node/Express, Twilio behind the provider interface, SQLite; see its README for
+local setup, Twilio console config, and the end-to-end test walkthrough).
+
 Implementation sketch:
 - **Provider:** Twilio (fastest to build: Programmable Voice + Messaging, number
   porting, SIP domains) — Telnyx/SignalWire as cost-optimized alternatives.
