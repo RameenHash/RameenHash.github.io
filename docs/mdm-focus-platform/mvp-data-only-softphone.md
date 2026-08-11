@@ -101,8 +101,9 @@ must be designed and verified before launch, with telecom/regulatory guidance:
   MDM app-hiding, but changes UX (and iMessage/RCS are out of the picture, which for
   this product is a feature, not a loss).
 - **Still multi-vendor (for now):** public number at Twilio + a data-only SIM/eSIM from
-  a carrier + your server. Collapsing this stack is exactly what the MVNO/carrier-
-  partnership paths are being researched to do.
+  a carrier + your server. Collapsing this stack — and upgrading anti-bypass from
+  device-side to network-level — is what an MVNE-hosted core does; see
+  [mvno-carrier-paths.md](./mvno-carrier-paths.md).
 
 ## Phasing
 
@@ -112,8 +113,13 @@ must be designed and verified before launch, with telecom/regulatory guidance:
 2. **MVP-ship (data-only + softphone):** data-only line, in-app VoIP calling/messaging,
    native telephony hidden by MDM, E911 solved. This is the bypass-resistant product.
 3. **Stack collapse:** move number provisioning + data line under one MVNE/MVNO or
-   carrier partnership so there is no per-student port and one vendor owns the SIM +
-   number (see the MVNO paths doc).
+   carrier partnership (see [mvno-carrier-paths.md](./mvno-carrier-paths.md)). This does
+   more than remove vendors: a hosted core lets you ship a **voice+SMS-barred,
+   data-enabled, emergency-exempt** SIM via **Operator Determined Barring (ODB)** —
+   turning anti-bypass into a *network* guarantee (no dialable voice number can exist)
+   and adding a free always-on **native 911 fallback** on top of the softphone's E911.
+   That is categorically stronger than MDM-hides-the-app, and is the recommended
+   graduation from the CPaaS-port MVP.
 
 ## Open items to close before ship
 

@@ -13,6 +13,9 @@ Research date: August 2026. Deep dives with sources:
 - [Telephony gateway (number-in-the-cloud) design](./telephony-gateway.md) — the
   calls/texts routing mechanism (number hosted in the cloud); its threat model drove the
   data-only decision above
+- [MVNO / carrier-partnership paths](./mvno-carrier-paths.md) — how an MVNE-hosted core
+  makes the MVP easier and upgrades anti-bypass to a network guarantee (ODB); with a
+  phased recommendation
 - [Routing method comparison with flow diagrams](./routing-methods.md) — why porting
   beats forwarding / on-device / MVNO ([visual version](./routing-methods.html))
 - Diagrams: [two numbers / where LTE comes from](./two-numbers-explainer.html) ·
