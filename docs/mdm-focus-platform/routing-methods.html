@@ -1,0 +1,525 @@
+<title>DND Call & Text Routing — Method Comparison</title>
+<style>
+  :root {
+    --ground: #f4f6f9;
+    --surface: #ffffff;
+    --ink: #1b2233;
+    --muted: #5a6478;
+    --line: #c9d0dd;
+    --accent: #2b59c3;
+    --accent-tint: #e8eefb;
+    --pass: #1e7f4f;
+    --pass-tint: #e2f2e9;
+    --hold: #9a6b00;
+    --hold-tint: #faf0d8;
+    --fail: #b8412e;
+    --fail-tint: #fae7e3;
+    --chip-ink: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #12151c;
+      --surface: #1a1f2a;
+      --ink: #e8ebf2;
+      --muted: #98a2b8;
+      --line: #394153;
+      --accent: #7da2f2;
+      --accent-tint: #22304d;
+      --pass: #55c88f;
+      --pass-tint: #1c3a2c;
+      --hold: #e2b93b;
+      --hold-tint: #3d3213;
+      --fail: #e0705f;
+      --fail-tint: #46221c;
+      --chip-ink: #12151c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #12151c;
+    --surface: #1a1f2a;
+    --ink: #e8ebf2;
+    --muted: #98a2b8;
+    --line: #394153;
+    --accent: #7da2f2;
+    --accent-tint: #22304d;
+    --pass: #55c88f;
+    --pass-tint: #1c3a2c;
+    --hold: #e2b93b;
+    --hold-tint: #3d3213;
+    --fail: #e0705f;
+    --fail-tint: #46221c;
+    --chip-ink: #12151c;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.55;
+    font-size: 16px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 48px 20px 80px; }
+
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-size: 34px;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin: 0 0 12px;
+    text-wrap: balance;
+  }
+  .lede { color: var(--muted); max-width: 62ch; margin: 0 0 8px; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 18px;
+    margin: 26px 0 8px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 13px; color: var(--muted);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .sw { display: inline-block; width: 26px; height: 0; border-top: 2.5px solid var(--ink); }
+  .sw.dash { border-top-style: dashed; }
+  .sw.acc { border-top-color: var(--accent); }
+  .sw.grn { border-top-color: var(--pass); }
+  .sw.amb { border-top-color: var(--hold); }
+  .sw.red { border-top-color: var(--fail); }
+
+  section { margin-top: 46px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  h2 { font-size: 21px; letter-spacing: -0.01em; margin: 0; }
+  .chip {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 999px; font-weight: 700;
+  }
+  .chip.chosen { background: var(--pass); color: var(--chip-ink); }
+  .chip.rejected { background: var(--fail); color: var(--chip-ink); }
+  .chip.partial { background: var(--hold); color: var(--chip-ink); }
+  .chip.deferred { background: var(--line); color: var(--ink); }
+
+  figure {
+    margin: 18px 0 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px 16px 10px;
+    overflow-x: auto;
+  }
+  figure svg { display: block; min-width: 640px; max-width: 100%; height: auto; color: var(--ink); margin: 0 auto; }
+  figcaption { font-size: 13px; color: var(--muted); padding: 10px 6px 8px; max-width: 70ch; }
+
+  .notes { margin: 14px 0 0; padding-left: 20px; }
+  .notes li { margin: 6px 0; max-width: 68ch; }
+  .notes .good { color: var(--pass); font-weight: 600; }
+  .notes .bad { color: var(--fail); font-weight: 600; }
+  .notes .warn { color: var(--hold); font-weight: 600; }
+
+  /* SVG shared classes */
+  .node { fill: var(--surface); stroke: var(--ink); stroke-width: 1.6; }
+  .node-acc { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 2; }
+  .node-amb { fill: var(--hold-tint); stroke: var(--hold); stroke-width: 1.8; }
+  .node-mut { fill: var(--ground); stroke: var(--line); stroke-width: 1.6; }
+  .flow { stroke: var(--ink); stroke-width: 2; fill: none; }
+  .flow.dashed { stroke-dasharray: 6 5; }
+  .flow.acc { stroke: var(--accent); }
+  .flow.grn { stroke: var(--pass); }
+  .flow.amb { stroke: var(--hold); }
+  .flow.red { stroke: var(--fail); }
+  svg text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .lbl { font-size: 12.5px; font-weight: 650; fill: var(--ink); }
+  .sub { font-size: 11px; fill: var(--muted); }
+  .alab { font-size: 11px; fill: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .alab.grn { fill: var(--pass); }
+  .alab.amb { fill: var(--hold); }
+  .alab.red { fill: var(--fail); }
+  .alab.acc { fill: var(--accent); }
+  .big { font-size: 13px; font-weight: 700; fill: var(--accent); }
+
+  table {
+    width: 100%; border-collapse: collapse; margin-top: 18px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    font-size: 14px;
+  }
+  .tablewrap { overflow-x: auto; margin-top: 18px; border-radius: 12px; }
+  th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  th {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted);
+    font-weight: 600;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.method { font-weight: 650; white-space: nowrap; }
+  .yes { color: var(--pass); font-weight: 700; }
+  .no { color: var(--fail); font-weight: 700; }
+  .part { color: var(--hold); font-weight: 700; }
+
+  .verdict {
+    margin-top: 26px;
+    background: var(--accent-tint);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 16px 20px;
+    max-width: 100%;
+  }
+  .verdict p { margin: 0; max-width: 70ch; }
+  .verdict strong { color: var(--accent); }
+
+  footer { margin-top: 44px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Study Lockdown Platform · Design Note</p>
+  <h1>Where the call gets decided</h1>
+  <p class="lede">A friend dials the student's existing number — say <strong>(925)&nbsp;555-0123</strong>. Four methods could put your Do-Not-Disturb between that caller and the phone. They differ in exactly one thing: <em>where your code sits in the path</em>. Solid arrows are calls; dashed arrows are texts.</p>
+
+  <div class="legend">
+    <span><span class="sw"></span> call path</span>
+    <span><span class="sw dash"></span> text (SMS) path</span>
+    <span><span class="sw grn"></span> allowed through</span>
+    <span><span class="sw amb"></span> held for later</span>
+    <span><span class="sw red"></span> escapes your control</span>
+  </div>
+
+  <!-- ============ BASELINE ============ -->
+  <section>
+    <div class="sec-head"><h2>Today — no product</h2><span class="chip deferred">Baseline</span></div>
+    <figure>
+      <svg viewBox="0 0 780 150" role="img" aria-label="Baseline: a call or text goes from the caller through the carrier straight to the phone; the routing decision happens inside the carrier before any app runs.">
+        <defs>
+          <marker id="b-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+        <rect class="node" x="14" y="38" width="130" height="54" rx="9"/>
+        <text class="lbl" x="79" y="61" text-anchor="middle">Friend</text>
+        <text class="sub" x="79" y="78" text-anchor="middle">dials (925) 555-0123</text>
+
+        <rect class="node" x="300" y="38" width="180" height="54" rx="9"/>
+        <text class="lbl" x="390" y="61" text-anchor="middle">Verizon</text>
+        <text class="sub" x="390" y="78" text-anchor="middle">routing decided here</text>
+
+        <rect class="node" x="632" y="38" width="134" height="54" rx="9"/>
+        <text class="lbl" x="699" y="61" text-anchor="middle">Student's phone</text>
+        <text class="sub" x="699" y="78" text-anchor="middle">rings / text appears</text>
+
+        <line class="flow" x1="144" y1="57" x2="296" y2="57" marker-end="url(#b-ink)"/>
+        <line class="flow dashed" x1="144" y1="76" x2="296" y2="76" marker-end="url(#b-ink)"/>
+        <line class="flow" x1="480" y1="57" x2="628" y2="57" marker-end="url(#b-ink)"/>
+        <line class="flow dashed" x1="480" y1="76" x2="628" y2="76" marker-end="url(#b-ink)"/>
+
+        <text class="alab red" x="699" y="118" text-anchor="middle">an app here is too late —</text>
+        <text class="alab red" x="699" y="133" text-anchor="middle">the call already arrived</text>
+      </svg>
+      <figcaption>The carrier decides where calls and texts go, before any app on the phone runs. Every method below is a different way of changing that decision point.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============ METHOD 1: PORT ============ -->
+  <section>
+    <div class="sec-head"><h2>1 · Port the number to your provider</h2><span class="chip chosen">Chosen</span></div>
+    <figure>
+      <svg viewBox="0 0 800 372" role="img" aria-label="Port method: the 925 number lives at Twilio, which webhooks your server. Your server either bridges the call to the phone's hidden shadow number, or holds it — caller hears 'delivered soon', texts go to a vault, and everything is released as a digest when DND ends.">
+        <defs>
+          <marker id="p-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+          </marker>
+          <marker id="p-grn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--pass)"/>
+          </marker>
+          <marker id="p-amb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--hold)"/>
+          </marker>
+          <marker id="p-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+
+        <rect class="node" x="10" y="96" width="122" height="54" rx="9"/>
+        <text class="lbl" x="71" y="119" text-anchor="middle">Friend</text>
+        <text class="sub" x="71" y="136" text-anchor="middle">dials (925) 555-0123</text>
+
+        <rect class="node-acc" x="196" y="96" width="150" height="54" rx="9"/>
+        <text class="lbl" x="271" y="119" text-anchor="middle">Twilio</text>
+        <text class="sub" x="271" y="136" text-anchor="middle">the 925 number lives here</text>
+
+        <rect class="node-acc" x="416" y="88" width="164" height="70" rx="9"/>
+        <text class="big" x="498" y="113" text-anchor="middle">Your server</text>
+        <text class="sub" x="498" y="130" text-anchor="middle">DND on? whitelisted?</text>
+        <text class="sub" x="498" y="145" text-anchor="middle">emergency?</text>
+
+        <line class="flow" x1="132" y1="113" x2="192" y2="113" marker-end="url(#p-ink)"/>
+        <line class="flow dashed" x1="132" y1="132" x2="192" y2="132" marker-end="url(#p-ink)"/>
+        <line class="flow acc" x1="346" y1="123" x2="412" y2="123" marker-end="url(#p-acc)"/>
+        <text class="alab acc" x="379" y="112" text-anchor="middle">webhook</text>
+
+        <!-- allowed branch -->
+        <rect class="node" x="656" y="14" width="134" height="58" rx="9"/>
+        <text class="lbl" x="723" y="36" text-anchor="middle">Student's phone</text>
+        <text class="sub" x="723" y="52" text-anchor="middle">SIM = hidden shadow #</text>
+        <text class="sub" x="723" y="65" text-anchor="middle">rings, shows friend's ID</text>
+        <path class="flow grn" d="M580 100 L616 100 L616 43 L652 43" marker-end="url(#p-grn)"/>
+        <text class="alab grn" x="602" y="88" text-anchor="start">allowed →</text>
+        <text class="alab grn" x="626" y="30" text-anchor="start">bridge</text>
+
+        <!-- held branch -->
+        <rect class="node-amb" x="656" y="182" width="134" height="58" rx="9"/>
+        <text class="lbl" x="723" y="204" text-anchor="middle">Vault</text>
+        <text class="sub" x="723" y="220" text-anchor="middle">texts stored · calls to</text>
+        <text class="sub" x="723" y="233" text-anchor="middle">voicemail, logged</text>
+        <path class="flow amb" d="M580 146 L616 146 L616 211 L652 211" marker-end="url(#p-amb)"/>
+        <text class="alab amb" x="602" y="166" text-anchor="start">DND on →</text>
+        <text class="alab amb" x="626" y="200" text-anchor="start">hold</text>
+
+        <!-- caller hears -->
+        <rect class="node-amb" x="416" y="196" width="164" height="44" rx="9"/>
+        <text class="sub" x="498" y="214" text-anchor="middle">caller hears: “studying —</text>
+        <text class="sub" x="498" y="228" text-anchor="middle">delivered when DND ends”</text>
+
+        <!-- release -->
+        <path class="flow amb dashed" d="M723 182 L723 118 L723 76" marker-end="url(#p-amb)"/>
+        <text class="alab amb" x="734" y="132" text-anchor="start">digest when</text>
+        <text class="alab amb" x="734" y="146" text-anchor="start">DND ends</text>
+
+        <text class="alab" x="10" y="292">the phone never sees a blocked call or held text — nothing to hide on-device</text>
+        <text class="alab" x="10" y="310">DND toggle = a server-side flag: instant, works identically on iPhone and Android</text>
+        <text class="alab" x="10" y="328">outgoing 911 still uses the real SIM; PSAP calls back the shadow # directly — never blocked</text>
+        <text class="alab" x="10" y="346">one-time setup per student: port 925 to Twilio + add a replacement carrier line (shadow #)</text>
+      </svg>
+      <figcaption>The number itself moves to the provider, so every call and text hits your server first. Both branches — bridge and hold — are your code. This is the architecture <code>focus-gateway</code> implements.</figcaption>
+    </figure>
+    <ul class="notes">
+      <li><span class="good">Everything works:</span> caller hears your message, calls and texts truly held, whitelist rings through, identical on iPhone and Android.</li>
+      <li><span class="good">Caller never sees a new number</span> — they dial 925 forever. The shadow number is invisible plumbing.</li>
+      <li><span class="warn">One-time friction per student:</span> the port (LOA + carrier PIN, 5–15 business days) and a replacement line on the family's existing plan.</li>
+    </ul>
+  </section>
+
+  <!-- ============ METHOD 2: FORWARDING ============ -->
+  <section>
+    <div class="sec-head"><h2>2 · Carrier call forwarding (**21*…#)</h2><span class="chip rejected">Rejected — texts escape, manual toggle</span></div>
+    <figure>
+      <svg viewBox="0 0 800 300" role="img" aria-label="Forwarding method: Verizon keeps the number and forwards calls to your server, but texts cannot be forwarded and go straight to the phone; the forwarding toggle is manual, especially on iPhone.">
+        <defs>
+          <marker id="f-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+          </marker>
+          <marker id="f-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
+          </marker>
+          <marker id="f-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--fail)"/>
+          </marker>
+        </defs>
+
+        <rect class="node" x="10" y="60" width="122" height="54" rx="9"/>
+        <text class="lbl" x="71" y="83" text-anchor="middle">Friend</text>
+        <text class="sub" x="71" y="100" text-anchor="middle">dials (925) 555-0123</text>
+
+        <rect class="node" x="196" y="60" width="168" height="54" rx="9"/>
+        <text class="lbl" x="280" y="83" text-anchor="middle">Verizon</text>
+        <text class="sub" x="280" y="100" text-anchor="middle">925 stays here · CFU on</text>
+
+        <rect class="node-acc" x="432" y="52" width="150" height="70" rx="9"/>
+        <text class="big" x="507" y="79" text-anchor="middle">Your server</text>
+        <text class="sub" x="507" y="96" text-anchor="middle">hold or bridge</text>
+        <text class="sub" x="507" y="110" text-anchor="middle">(calls only)</text>
+
+        <rect class="node" x="656" y="60" width="134" height="54" rx="9"/>
+        <text class="lbl" x="723" y="83" text-anchor="middle">Student's phone</text>
+        <text class="sub" x="723" y="100" text-anchor="middle">same SIM, same #</text>
+
+        <line class="flow" x1="132" y1="78" x2="192" y2="78" marker-end="url(#f-ink)"/>
+        <line class="flow dashed" x1="132" y1="97" x2="192" y2="97" marker-end="url(#f-ink)"/>
+
+        <line class="flow acc" x1="364" y1="78" x2="428" y2="78" marker-end="url(#f-acc)"/>
+        <text class="alab acc" x="396" y="66" text-anchor="middle">calls fwd'd</text>
+
+        <line class="flow" x1="582" y1="78" x2="652" y2="78" marker-end="url(#f-ink)"/>
+        <text class="alab" x="617" y="66" text-anchor="middle">if allowed</text>
+
+        <!-- SMS leak -->
+        <path class="flow dashed red" d="M280 114 L280 190 L560 190 L700 190 L723 190 L723 118" marker-end="url(#f-red)"/>
+        <text class="alab red" x="500" y="180" text-anchor="middle">texts CANNOT be forwarded — they land on the phone during DND anyway</text>
+
+        <text class="alab red" x="10" y="248">toggle = the student dials **21*…# by hand · no app can flip it on iPhone; unreliable on Android</text>
+        <text class="alab" x="10" y="268">whitelist ring-through needs a hidden second number anyway (bridging back to 925 would loop)</text>
+      </svg>
+      <figcaption>Forwarding moves only the voice path — and only while someone remembers to switch it on. The dashed red edge is the dealbreaker: SMS has no forwarding mechanism at any carrier.</figcaption>
+    </figure>
+    <ul class="notes">
+      <li><span class="bad">Texts escape:</span> SMS travels a separate network path that cannot be forwarded — the "hold texts" half of the product is impossible here.</li>
+      <li><span class="bad">Un-automatable on iPhone:</span> no API exists to toggle forwarding; the student would dial codes manually each session — the opposite of enforced DND.</li>
+    </ul>
+  </section>
+
+  <!-- ============ METHOD 3: ON-DEVICE ============ -->
+  <section>
+    <div class="sec-head"><h2>3 · App on the phone only</h2><span class="chip partial">Rejected — partial on Android, nothing on iPhone</span></div>
+    <figure>
+      <svg viewBox="0 0 800 312" role="img" aria-label="On-device method: every call and text reaches the phone first. An Android agent can silence calls, auto-text the caller, and hold SMS after arrival, but cannot play a message to the caller; on iPhone none of it is possible.">
+        <defs>
+          <marker id="d-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+          </marker>
+          <marker id="d-amb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--hold)"/>
+          </marker>
+        </defs>
+
+        <rect class="node" x="10" y="70" width="122" height="54" rx="9"/>
+        <text class="lbl" x="71" y="93" text-anchor="middle">Friend</text>
+        <text class="sub" x="71" y="110" text-anchor="middle">dials or texts 925</text>
+
+        <rect class="node" x="196" y="70" width="150" height="54" rx="9"/>
+        <text class="lbl" x="271" y="93" text-anchor="middle">Verizon</text>
+        <text class="sub" x="271" y="110" text-anchor="middle">delivers everything</text>
+
+        <line class="flow" x1="132" y1="88" x2="192" y2="88" marker-end="url(#d-ink)"/>
+        <line class="flow dashed" x1="132" y1="107" x2="192" y2="107" marker-end="url(#d-ink)"/>
+        <line class="flow" x1="346" y1="88" x2="420" y2="88" marker-end="url(#d-ink)"/>
+        <line class="flow dashed" x1="346" y1="107" x2="420" y2="107" marker-end="url(#d-ink)"/>
+        <text class="alab" x="384" y="76" text-anchor="middle">arrives first</text>
+
+        <!-- phone container -->
+        <rect class="node" x="424" y="26" width="366" height="222" rx="12"/>
+        <text class="lbl" x="607" y="50" text-anchor="middle">Student's phone — your agent app runs here, after arrival</text>
+
+        <rect class="node-amb" x="444" y="66" width="326" height="82" rx="9"/>
+        <text class="lbl" x="607" y="86" text-anchor="middle">Android (agent = dialer + SMS app)</text>
+        <text class="sub" x="607" y="104" text-anchor="middle">silence call · auto-TEXT the caller “studying, will call back”</text>
+        <text class="sub" x="607" y="119" text-anchor="middle">hold SMS locally + release later ✓ (but RCS bypasses)</text>
+        <text class="sub" x="607" y="137" text-anchor="middle">cannot ANSWER the call or speak a message to the caller</text>
+
+        <rect class="node" x="444" y="162" width="326" height="66" rx="9" style="stroke: var(--fail); fill: var(--fail-tint);"/>
+        <text class="lbl" x="607" y="184" text-anchor="middle" style="fill: var(--fail);">iPhone</text>
+        <text class="sub" x="607" y="202" text-anchor="middle">no call screening, no SMS access, no auto-reply —</text>
+        <text class="sub" x="607" y="217" text-anchor="middle">Apple exposes no API for any of it</text>
+
+        <text class="alab" x="10" y="284">the “caller hears your message” part is an answering-machine (IVR) function — it needs a server that</text>
+        <text class="alab" x="10" y="300">answers the call. No phone OS lets an app inject audio into a live carrier call.</text>
+      </svg>
+      <figcaption>Everything reaches the phone first, so the app can only react after the fact. Android salvages a text-only courtesy reply and local SMS holding; iPhone offers nothing at all.</figcaption>
+    </figure>
+    <ul class="notes">
+      <li><span class="warn">Android partial:</span> real SMS holding and an auto-text to callers — but the caller never hears a spoken message, the call can't be parked, and RCS/iMessage bypass the hold.</li>
+      <li><span class="bad">iPhone: zero.</span> This is the wall that forces a server into the path for any iPhone product.</li>
+    </ul>
+  </section>
+
+  <!-- ============ METHOD 4: MVNO ============ -->
+  <section>
+    <div class="sec-head"><h2>4 · Become the carrier (MVNO)</h2><span class="chip deferred">Deferred — heavyweight, same result as porting</span></div>
+    <figure>
+      <svg viewBox="0 0 800 170" role="img" aria-label="MVNO method: you run the mobile core, so calls and texts hit your network's policy engine before the phone — same control as porting, but you are the carrier.">
+        <defs>
+          <marker id="m-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+          </marker>
+          <marker id="m-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <rect class="node" x="10" y="44" width="122" height="54" rx="9"/>
+        <text class="lbl" x="71" y="67" text-anchor="middle">Friend</text>
+        <text class="sub" x="71" y="84" text-anchor="middle">dials 925</text>
+
+        <rect class="node-acc" x="230" y="36" width="300" height="70" rx="9"/>
+        <text class="big" x="380" y="61" text-anchor="middle">Your mobile network core</text>
+        <text class="sub" x="380" y="78" text-anchor="middle">you are the carrier — DND policy inside</text>
+        <text class="sub" x="380" y="93" text-anchor="middle">the network itself (HLR / SMSC)</text>
+
+        <rect class="node" x="656" y="44" width="134" height="54" rx="9"/>
+        <text class="lbl" x="723" y="67" text-anchor="middle">Student's phone</text>
+        <text class="sub" x="723" y="84" text-anchor="middle">your SIM, keeps 925</text>
+
+        <line class="flow" x1="132" y1="62" x2="226" y2="62" marker-end="url(#m-ink)"/>
+        <line class="flow dashed" x1="132" y1="81" x2="226" y2="81" marker-end="url(#m-ink)"/>
+        <line class="flow acc" x1="530" y1="62" x2="652" y2="62" marker-end="url(#m-acc)"/>
+        <line class="flow acc dashed" x1="530" y1="81" x2="652" y2="81" marker-end="url(#m-acc)"/>
+        <text class="alab acc" x="591" y="50" text-anchor="middle">only what policy allows</text>
+
+        <text class="alab" x="10" y="140">what Gabb / Pinwheel / Bark do · months of build + carrier agreements · students still move to your SIM</text>
+      </svg>
+      <figcaption>Full control because you own the network — but the student's number still has to move onto your service, so per-user friction is the same as porting, with a vastly bigger build. The natural evolution once the ported model proves out.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============ TABLE ============ -->
+  <section>
+    <div class="sec-head"><h2>Side by side</h2></div>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Caller keeps dialing 925</th>
+            <th>Caller hears “delivered soon”</th>
+            <th>Calls held</th>
+            <th>Texts held</th>
+            <th>Works on iPhone</th>
+            <th>DND toggle</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="method">1 · Port <span class="chip chosen" style="margin-left:6px;">chosen</span></td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Instant, server-side</td>
+          </tr>
+          <tr>
+            <td class="method">2 · Forwarding</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes (calls)</td>
+            <td class="yes">Yes</td>
+            <td class="no">No — can't forward SMS</td>
+            <td class="part">Calls only</td>
+            <td class="no">Manual dial codes</td>
+          </tr>
+          <tr>
+            <td class="method">3 · On-device app</td>
+            <td class="yes">Yes</td>
+            <td class="no">No (Android: text-only reply)</td>
+            <td class="no">No</td>
+            <td class="part">Android SMS only</td>
+            <td class="no">No</td>
+            <td class="part">Android only</td>
+          </tr>
+          <tr>
+            <td class="method">4 · MVNO</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Instant, network-side</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="verdict">
+      <p><strong>Verdict:</strong> only a server in the number's path delivers the full experience, and porting is the only practical way to put it there. Method 1 is what <code>focus-gateway</code> implements today — your Twilio test number stands in for a ported 925 number, and production onboarding is “port the student's number + add a hidden replacement line.” Method 4 is the same control at carrier scale, worth revisiting only if port-onboarding friction limits growth.</p>
+    </div>
+  </section>
+
+  <footer>
+    Study Lockdown MDM platform · routing research, Aug 2026 · full sources in
+    <code>docs/mdm-focus-platform/</code> (iOS &amp; Android capability deep-dives, telephony-gateway design).
+  </footer>
+</div>

@@ -10,6 +10,8 @@ Research date: August 2026. Deep dives with sources:
 - [Android platform capabilities](./android-platform-capabilities.md)
 - [Telephony gateway (number-in-the-cloud) design](./telephony-gateway.md) — **adopted
   Aug 2026 as the primary calls/texts mechanism for both platforms**
+- [Routing method comparison with flow diagrams](./routing-methods.md) — why porting
+  beats forwarding / on-device / MVNO ([visual version](./routing-methods.html))
 
 ---
 

@@ -20,6 +20,9 @@ DND on or off — and the server applies policy:
 This is the same pattern Google Voice uses, and functionally what kid-phone MVNOs
 (Gabb/Troomi/Pinwheel) achieve at the network core — without becoming an MVNO.
 
+Flow diagrams comparing this method against forwarding, on-device-only, and MVNO:
+[routing-methods.md](./routing-methods.md).
+
 ## Why Variant B beats DND-toggled carrier forwarding (Variant A, rejected)
 
 - Forwarding (`**21*…#`) loops when the server bridges a whitelisted call back to the
