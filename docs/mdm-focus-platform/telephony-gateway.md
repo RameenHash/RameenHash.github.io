@@ -120,11 +120,23 @@ Implementation sketch:
 - E911 address registration on the hosted real number is still required by
   regulation even though we never expect emergency traffic on it.
 
+## Anti-bypass decision — data-only line (Aug 2026)
+
+**The shadow-number leak below is the deciding threat, and it is why the shipping MVP
+moves to a data-only line + softphone** ([mvp-data-only-softphone.md](./mvp-data-only-softphone.md)).
+A voice-capable shadow line has a dialable number that leaks via outbound caller ID and
+can be dialed directly — a full bypass on iPhone, where no on-device fix exists. The
+resolution is to remove the dialable number entirely: the SIM carries **data only**, and
+our app is the **only** dialer/messenger, always over the public number. Then there is
+nothing to leak and nothing to dial around, identically on both platforms. The
+voice-capable-shadow design in this doc remains valid only for early routing tests
+(Phase 1), where Android's device-owner agent already contains the leak.
+
 ## Threat model & gotchas
 
 | Issue | Impact | Mitigation |
 |---|---|---|
-| **Shadow-number leakage** (outbound SIM calls show it as caller ID; a friend saves it and bypasses DND forever) | Main threat | **Android: solved** — agent is the dialer; route outbound via Voice SDK/SIP presenting the real number. **iOS: residual risk** — cannot force outbound routing; mitigate with periodic shadow-number rotation, monitoring inbound-to-shadow from unknown numbers, and blocking Contacts sharing of it where possible |
+| **Shadow-number leakage** (outbound SIM calls show it as caller ID; a friend saves it and bypasses DND forever) | **Deciding threat** → drove the data-only MVP | **Shipping fix: data-only line** — no dialable number on the SIM; app is the only dialer/messenger over the public number, so nothing leaks on either platform. **Interim (voice-shadow, test only):** Android agent routes outbound as the public number and screens direct-to-shadow calls; iOS has no on-device fix (rotation/monitoring only) |
 | **SMS reply threading** (relayed texts arrive "from" the relay number) | UX | Android: non-issue — agent is the SMS app; shows true sender, routes replies back through gateway. iOS: proxy-number-per-contact (Google Voice pattern, ~$1/mo per active contact number) or deliver via our app's inbox |
 | MMS | Media messages | Provider MMS APIs handle inbound; relay as MMS or in-app media |
 | **OTP/2FA codes held during DND** | Lockouts, support tickets | Gateway parses held texts for OTP patterns → immediate passthrough (configurable) |

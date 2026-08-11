@@ -8,10 +8,15 @@ through and notify. Texts are invisible to the student until the mode ends, then
 Research date: August 2026. Deep dives with sources:
 - [iOS platform capabilities](./ios-platform-capabilities.md)
 - [Android platform capabilities](./android-platform-capabilities.md)
-- [Telephony gateway (number-in-the-cloud) design](./telephony-gateway.md) — **adopted
-  Aug 2026 as the primary calls/texts mechanism for both platforms**
+- [**MVP — data-only line + softphone**](./mvp-data-only-softphone.md) — **the real MVP
+  (Aug 2026): the anti-bypass design.** Data-only SIM, app as the only dialer/messenger.
+- [Telephony gateway (number-in-the-cloud) design](./telephony-gateway.md) — the
+  calls/texts routing mechanism (number hosted in the cloud); its threat model drove the
+  data-only decision above
 - [Routing method comparison with flow diagrams](./routing-methods.md) — why porting
   beats forwarding / on-device / MVNO ([visual version](./routing-methods.html))
+- Diagrams: [two numbers / where LTE comes from](./two-numbers-explainer.html) ·
+  [the shadow-number leak & the data-only fix](./shadow-leak-and-fix.html)
 
 ---
 

@@ -1,0 +1,265 @@
+<title>Two Numbers, Two Jobs — Where the LTE Comes From</title>
+<style>
+  :root {
+    --ground: #f5f7fa;
+    --surface: #ffffff;
+    --ink: #1a2231;
+    --muted: #58627a;
+    --line: #ccd3e0;
+    --accent: #2b59c3;
+    --accent-tint: #e8eefb;
+    --pass: #1e7f4f;
+    --pass-tint: #e3f2ea;
+    --warn: #9a6b00;
+    --warn-tint: #faf0d6;
+    --fail: #b8412e;
+    --fail-tint: #fae6e2;
+    --chip-ink: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #11141b; --surface: #191e28; --ink: #e9ecf3; --muted: #98a2b8;
+      --line: #363e50; --accent: #7da2f2; --accent-tint: #21304d;
+      --pass: #55c88f; --pass-tint: #1b3a2b; --warn: #e2b93b; --warn-tint: #3c3212;
+      --fail: #e0705f; --fail-tint: #45211b; --chip-ink: #11141b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #11141b; --surface: #191e28; --ink: #e9ecf3; --muted: #98a2b8;
+    --line: #363e50; --accent: #7da2f2; --accent-tint: #21304d;
+    --pass: #55c88f; --pass-tint: #1b3a2b; --warn: #e2b93b; --warn-tint: #3c3212;
+    --fail: #e0705f; --fail-tint: #45211b; --chip-ink: #11141b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.55; font-size: 16px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 48px 20px 80px; }
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px;
+  }
+  h1 { font-size: 32px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 12px; text-wrap: balance; }
+  .lede { color: var(--muted); max-width: 64ch; margin: 0 0 8px; }
+  .lede strong { color: var(--ink); }
+  section { margin-top: 46px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  h2 { font-size: 20px; letter-spacing: -0.01em; margin: 0; }
+  .sec-head .n { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; color: var(--accent); font-weight: 700; }
+  figure {
+    margin: 16px 0 0; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 20px 16px 12px; overflow-x: auto;
+  }
+  figure svg { display: block; min-width: 580px; max-width: 100%; height: auto; color: var(--ink); margin: 0 auto; }
+  figcaption { font-size: 13px; color: var(--muted); padding: 10px 6px 4px; max-width: 74ch; }
+  svg text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .lbl { font-size: 12.5px; font-weight: 650; fill: var(--ink); }
+  .lbl.b { font-size: 14px; font-weight: 750; }
+  .sub { font-size: 11px; fill: var(--muted); }
+  .job { font-size: 11.5px; font-weight: 650; }
+  .alab { font-size: 11px; fill: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .alab.grn { fill: var(--pass); } .alab.warn { fill: var(--warn); } .alab.red { fill: var(--fail); } .alab.acc { fill: var(--accent); }
+  .flow { stroke: var(--ink); stroke-width: 2; fill: none; }
+  .flow.grn { stroke: var(--pass); } .flow.acc { stroke: var(--accent); } .flow.warn { stroke: var(--warn); }
+  .flow.dashed { stroke-dasharray: 6 5; }
+  .box { fill: var(--surface); stroke: var(--ink); stroke-width: 1.6; }
+  .box.acc { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 2; }
+  .box.grn { fill: var(--pass-tint); stroke: var(--pass); stroke-width: 1.8; }
+  .box.warn { fill: var(--warn-tint); stroke: var(--warn); stroke-width: 1.8; }
+  .box.red  { fill: var(--fail-tint); stroke: var(--fail); stroke-width: 1.8; }
+  .box.mut  { fill: var(--ground); stroke: var(--line); stroke-width: 1.6; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 24px 0 0; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; font-size: 13px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .dot.grn { background: var(--pass); } .dot.acc { background: var(--accent); } .dot.warn { background: var(--warn); } .dot.red { background: var(--fail); }
+  .notes { margin: 12px 0 0; padding-left: 20px; }
+  .notes li { margin: 6px 0; max-width: 74ch; }
+  .notes .g { color: var(--pass); font-weight: 650; } .notes .w { color: var(--warn); font-weight: 650; } .notes .r { color: var(--fail); font-weight: 650; } .notes .a { color: var(--accent); font-weight: 650; }
+  .verdict { margin-top: 24px; background: var(--accent-tint); border: 1px solid var(--accent); border-radius: 12px; padding: 16px 20px; }
+  .verdict p { margin: 0; max-width: 74ch; }
+  .verdict strong { color: var(--accent); }
+  footer { margin-top: 42px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; background: var(--accent-tint); padding: 1px 5px; border-radius: 4px; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Study Lockdown Platform · Architecture Clarification</p>
+  <h1>Two numbers, two jobs</h1>
+  <p class="lede">The worry: "if we're not a cell carrier and the number leaves Verizon, how does the phone still get LTE?" The answer: <strong>the public number never provides the phone's LTE after the port — a second number (the shadow line) does.</strong> Porting splits one number's two jobs across two numbers.</p>
+
+  <div class="legend">
+    <span><span class="dot acc"></span> public identity (cloud, no LTE needed)</span>
+    <span><span class="dot grn"></span> real cellular line (provides LTE)</span>
+    <span><span class="dot warn"></span> the port event</span>
+  </div>
+
+  <!-- ===== 1. THE SPLIT ===== -->
+  <section>
+    <div class="sec-head"><span class="n">1</span><h2>Today one SIM does both jobs — porting splits them</h2></div>
+    <figure>
+      <svg viewBox="0 0 720 396" role="img" aria-label="Today the 925 SIM line does two jobs: it is the public number and it provides the phone's LTE. Porting splits these: 925 moves to Twilio as a cloud identity with no LTE, and a new shadow SIM line provides the phone's LTE.">
+        <defs>
+          <marker id="s1-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--warn)"/></marker>
+        </defs>
+
+        <!-- TODAY -->
+        <text class="alab" x="150" y="26">TODAY</text>
+        <rect class="box" x="150" y="34" width="420" height="104" rx="11"/>
+        <text class="lbl b" x="360" y="58" text-anchor="middle">The 925 SIM line — doing both jobs at once</text>
+        <rect class="box acc" x="168" y="72" width="188" height="50" rx="8"/>
+        <text class="job" x="262" y="92" text-anchor="middle" fill="var(--accent)">① public number</text>
+        <text class="sub" x="262" y="108" text-anchor="middle">everyone dials (925) 555-0123</text>
+        <rect class="box grn" x="364" y="72" width="188" height="50" rx="8"/>
+        <text class="job" x="458" y="92" text-anchor="middle" fill="var(--pass)">② the phone's LTE</text>
+        <text class="sub" x="458" y="108" text-anchor="middle">data, calls, texts</text>
+
+        <!-- split arrows -->
+        <path class="flow warn" d="M300 138 L300 176 L262 176 L262 210" marker-end="url(#s1-warn)"/>
+        <path class="flow warn" d="M420 138 L420 176 L458 176 L458 210" marker-end="url(#s1-warn)"/>
+        <text class="alab warn" x="360" y="170" text-anchor="middle">porting splits the two jobs →</text>
+
+        <!-- AFTER LEFT: 925 to cloud -->
+        <text class="alab" x="40" y="204">AFTER · job ①</text>
+        <rect class="box acc" x="40" y="212" width="300" height="118" rx="11"/>
+        <text class="lbl b" x="190" y="238" text-anchor="middle">925 → Twilio (cloud)</text>
+        <text class="sub" x="190" y="260" text-anchor="middle">keeps the public identity only</text>
+        <text class="sub" x="190" y="278" text-anchor="middle">no SIM · needs no LTE —</text>
+        <text class="sub" x="190" y="293" text-anchor="middle">it's a routing address on a server</text>
+        <text class="job" x="190" y="316" text-anchor="middle" fill="var(--accent)">callers still dial 925, unchanged</text>
+
+        <!-- AFTER RIGHT: shadow SIM -->
+        <text class="alab" x="380" y="204">AFTER · job ②</text>
+        <rect class="box grn" x="380" y="212" width="300" height="118" rx="11"/>
+        <text class="lbl b" x="530" y="238" text-anchor="middle">Shadow # → new SIM in phone</text>
+        <text class="sub" x="530" y="260" text-anchor="middle">provides the phone's LTE, data, calls</text>
+        <text class="sub" x="530" y="278" text-anchor="middle">a real carrier line</text>
+        <text class="sub" x="530" y="293" text-anchor="middle">(Verizon add-a-line or an eSIM)</text>
+        <text class="job" x="530" y="316" text-anchor="middle" fill="var(--pass)">a number nobody is ever given</text>
+
+        <text class="alab" x="40" y="360">The phone is never without a real SIM: the 925 line before, the shadow line after — LTE never drops.</text>
+        <text class="alab" x="40" y="380">You are not the carrier. A real carrier provides the shadow line; Twilio holds the number; your server is the brain.</text>
+      </svg>
+      <figcaption>The number leaving Verizon is only the <em>public identity</em>, which moves to the cloud where it needs no cellular signal. The phone's actual LTE comes from a brand-new SIM line — so cell service never depends on the ported number.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===== 2. A CALL, END TO END ===== -->
+  <section>
+    <div class="sec-head"><span class="n">2</span><h2>How a call reaches the phone — over the shadow line</h2></div>
+    <figure>
+      <svg viewBox="0 0 760 250" role="img" aria-label="A friend dials 925, which rings at Twilio; Twilio webhooks your server; if allowed, your server bridges an outbound call from Twilio to the shadow number, which rings the phone over its shadow LTE line showing the friend's caller ID.">
+        <defs>
+          <marker id="s2-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+          <marker id="s2-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker>
+          <marker id="s2-grn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--pass)"/></marker>
+        </defs>
+        <rect class="box" x="12" y="70" width="118" height="54" rx="9"/>
+        <text class="lbl" x="71" y="93" text-anchor="middle">Friend</text>
+        <text class="sub" x="71" y="110" text-anchor="middle">dials 925</text>
+
+        <rect class="box acc" x="176" y="70" width="140" height="54" rx="9"/>
+        <text class="lbl" x="246" y="93" text-anchor="middle">Twilio</text>
+        <text class="sub" x="246" y="110" text-anchor="middle">925 lives here (cloud)</text>
+
+        <rect class="box acc" x="362" y="62" width="150" height="70" rx="9"/>
+        <text class="lbl b" x="437" y="88" text-anchor="middle" fill="var(--accent)">Your server</text>
+        <text class="sub" x="437" y="106" text-anchor="middle">DND? whitelist?</text>
+        <text class="sub" x="437" y="120" text-anchor="middle">allowed → bridge</text>
+
+        <rect class="box grn" x="586" y="62" width="162" height="70" rx="9"/>
+        <text class="lbl b" x="667" y="86" text-anchor="middle">Student's phone</text>
+        <text class="sub" x="667" y="104" text-anchor="middle">rings over shadow LTE line</text>
+        <text class="sub" x="667" y="119" text-anchor="middle">shows friend's caller ID</text>
+
+        <line class="flow" x1="130" y1="97" x2="172" y2="97" marker-end="url(#s2-ink)"/>
+        <line class="flow acc" x1="316" y1="97" x2="358" y2="97" marker-end="url(#s2-acc)"/>
+        <text class="alab acc" x="337" y="86" text-anchor="middle">webhook</text>
+        <line class="flow grn" x1="512" y1="97" x2="582" y2="97" marker-end="url(#s2-grn)"/>
+        <text class="alab grn" x="547" y="86" text-anchor="middle">bridge</text>
+
+        <text class="alab" x="12" y="176">The bridge is a normal outbound call from Twilio to the shadow number — it rides the phone's shadow cell line.</text>
+        <text class="alab grn" x="12" y="198">Emergency: outgoing 911 uses the shadow SIM directly on the carrier; the PSAP callback rings the shadow # — never routed through Twilio.</text>
+        <text class="alab" x="12" y="220">Texts work the same way: SMS to 925 lands at Twilio → server → relayed to the phone (or held in the vault during DND).</text>
+      </svg>
+      <figcaption>Nothing rings the phone directly on 925 anymore — the server bridges the allowed call to the shadow line, which is the phone's live cellular connection. That's the "connection from the private number to their phone" you described.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===== 3. WHO PROVIDES WHAT ===== -->
+  <section>
+    <div class="sec-head"><span class="n">3</span><h2>Three providers — and none of them is you being a carrier</h2></div>
+    <figure>
+      <svg viewBox="0 0 720 176" role="img" aria-label="Three roles: Twilio holds the public number in the cloud; a real carrier or eSIM provides the shadow line's LTE; your server holds the DND logic. You are not a cellular provider.">
+        <rect class="box acc" x="16" y="30" width="216" height="92" rx="11"/>
+        <text class="lbl b" x="124" y="58" text-anchor="middle" fill="var(--accent)">Twilio (CPaaS)</text>
+        <text class="sub" x="124" y="80" text-anchor="middle">holds the public 925</text>
+        <text class="sub" x="124" y="95" text-anchor="middle">number in the cloud</text>
+        <text class="sub" x="124" y="110" text-anchor="middle">— no cell towers</text>
+
+        <rect class="box grn" x="252" y="30" width="216" height="92" rx="11"/>
+        <text class="lbl b" x="360" y="58" text-anchor="middle" fill="var(--pass)">A real carrier / eSIM</text>
+        <text class="sub" x="360" y="80" text-anchor="middle">provides the shadow line's</text>
+        <text class="sub" x="360" y="95" text-anchor="middle">LTE, data, calls</text>
+        <text class="sub" x="360" y="110" text-anchor="middle">— Verizon add-a-line or eSIM</text>
+
+        <rect class="box" x="488" y="30" width="216" height="92" rx="11"/>
+        <text class="lbl b" x="596" y="58" text-anchor="middle">You</text>
+        <text class="sub" x="596" y="80" text-anchor="middle">the server: DND state,</text>
+        <text class="sub" x="596" y="95" text-anchor="middle">whitelist, vault, logic</text>
+        <text class="sub" x="596" y="110" text-anchor="middle">— not a cellular provider</text>
+
+        <text class="alab" x="16" y="154">You never provide cellular service. You rent a cloud number from Twilio and lean on a real carrier for the shadow line.</text>
+      </svg>
+      <figcaption>Your product is the logic layer only. The two things you're not building — a phone-number registry and a cellular network — are rented from Twilio and a real carrier respectively.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===== 4. WHAT SURVIVES ON THE VERIZON BILL ===== -->
+  <section>
+    <div class="sec-head"><span class="n">4</span><h2>On the Verizon side — the plan &amp; subscriptions</h2></div>
+    <figure>
+      <svg viewBox="0 0 720 214" role="img" aria-label="A Verizon account holds the plan, bill, and account-level perks plus one or more lines. Porting closes only the student's line; adding the shadow line keeps the account open so plan and account-level perks survive.">
+        <rect class="box acc" x="20" y="18" width="470" height="180" rx="12"/>
+        <text class="lbl b" x="40" y="44">Verizon ACCOUNT — stays open</text>
+        <text class="sub" x="40" y="62">a port closes a line, not the account</text>
+
+        <rect class="box grn" x="40" y="76" width="200" height="44" rx="8"/>
+        <text class="lbl" x="140" y="95" text-anchor="middle">Plan &amp; bill</text>
+        <text class="sub" x="140" y="110" text-anchor="middle">unchanged</text>
+        <rect class="box grn" x="270" y="76" width="200" height="44" rx="8"/>
+        <text class="lbl" x="370" y="95" text-anchor="middle">Account-level perks</text>
+        <text class="sub" x="370" y="110" text-anchor="middle">survive</text>
+
+        <rect class="box grn" x="40" y="132" width="150" height="52" rx="8"/>
+        <text class="lbl" x="115" y="154" text-anchor="middle">Shadow line</text>
+        <text class="sub" x="115" y="170" text-anchor="middle">added first</text>
+        <rect class="box warn" x="200" y="132" width="150" height="52" rx="8"/>
+        <text class="lbl" x="275" y="154" text-anchor="middle">Old 925 line</text>
+        <text class="sub" x="275" y="170" text-anchor="middle">ports out, closes last</text>
+        <rect class="box mut" x="360" y="132" width="110" height="52" rx="8"/>
+        <text class="lbl" x="415" y="158" text-anchor="middle">Other lines</text>
+        <text class="sub" x="415" y="173" text-anchor="middle">untouched</text>
+
+        <rect class="box warn" x="516" y="30" width="184" height="72" rx="10"/>
+        <text class="lbl b" x="608" y="56" text-anchor="middle" fill="var(--warn)">Watch:</text>
+        <text class="sub" x="608" y="76" text-anchor="middle">a promo/perk tied to</text>
+        <text class="sub" x="608" y="91" text-anchor="middle">the 925 LINE may not transfer</text>
+
+        <rect class="box red" x="516" y="118" width="184" height="80" rx="10"/>
+        <text class="lbl b" x="608" y="144" text-anchor="middle" fill="var(--fail)">Trap:</text>
+        <text class="sub" x="608" y="164" text-anchor="middle">single-line account +</text>
+        <text class="sub" x="608" y="179" text-anchor="middle">port first = account closes.</text>
+        <text class="sub" x="608" y="192" text-anchor="middle">Add shadow line FIRST.</text>
+      </svg>
+      <figcaption>Account-level billing and perks survive because the account stays open. The two caveats: a subscription bundled to the specific 925 <em>line</em> may need re-adding (promos can be lost), and a single-line account must add the shadow line before porting or it closes entirely.</figcaption>
+    </figure>
+  </section>
+
+  <div class="verdict">
+    <p><strong>The resolution:</strong> you don't need to be a carrier, and the phone never loses LTE. The 925 you keep becomes a cloud routing number at Twilio (no signal needed); the phone's cell service moves to a fresh shadow SIM line from a real carrier. That shadow line is exactly the "connection from the private number to their phone" you described — your server bridges 925 → shadow on every allowed call. The one operational rule: <strong>add the shadow line first, port second,</strong> so the phone and the Verizon account are continuous the whole way through.</p>
+  </div>
+
+  <footer>Study Lockdown MDM platform · porting &amp; LTE mechanics, Aug 2026 · pairs with routing-methods and telephony-gateway docs.</footer>
+</div>

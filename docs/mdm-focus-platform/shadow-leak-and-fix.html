@@ -1,0 +1,241 @@
+<title>The Shadow-Number Leak — and How to Close It</title>
+<style>
+  :root {
+    --ground: #f5f7fa; --surface: #ffffff; --ink: #1a2231; --muted: #58627a;
+    --line: #ccd3e0; --accent: #2b59c3; --accent-tint: #e8eefb;
+    --pass: #1e7f4f; --pass-tint: #e3f2ea; --warn: #9a6b00; --warn-tint: #faf0d6;
+    --fail: #b8412e; --fail-tint: #fae6e2; --chip-ink: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #11141b; --surface: #191e28; --ink: #e9ecf3; --muted: #98a2b8;
+      --line: #363e50; --accent: #7da2f2; --accent-tint: #21304d;
+      --pass: #55c88f; --pass-tint: #1b3a2b; --warn: #e2b93b; --warn-tint: #3c3212;
+      --fail: #e0705f; --fail-tint: #45211b; --chip-ink: #11141b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #11141b; --surface: #191e28; --ink: #e9ecf3; --muted: #98a2b8;
+    --line: #363e50; --accent: #7da2f2; --accent-tint: #21304d;
+    --pass: #55c88f; --pass-tint: #1b3a2b; --warn: #e2b93b; --warn-tint: #3c3212;
+    --fail: #e0705f; --fail-tint: #45211b; --chip-ink: #11141b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.55; font-size: 16px; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 48px 20px 80px; }
+  .eyebrow { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px; }
+  h1 { font-size: 32px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 12px; text-wrap: balance; }
+  .lede { color: var(--muted); max-width: 66ch; margin: 0 0 8px; }
+  .lede strong { color: var(--ink); }
+  section { margin-top: 46px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  h2 { font-size: 20px; letter-spacing: -0.01em; margin: 0; }
+  .sec-head .n { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; color: var(--accent); font-weight: 700; }
+  figure { margin: 16px 0 0; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 20px 16px 12px; overflow-x: auto; }
+  figure svg { display: block; min-width: 600px; max-width: 100%; height: auto; color: var(--ink); margin: 0 auto; }
+  figcaption { font-size: 13px; color: var(--muted); padding: 10px 6px 4px; max-width: 76ch; }
+  svg text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .lbl { font-size: 12.5px; font-weight: 650; fill: var(--ink); }
+  .lbl.b { font-size: 13.5px; font-weight: 750; }
+  .sub { font-size: 11px; fill: var(--muted); }
+  .col { font-size: 13px; font-weight: 750; }
+  .alab { font-size: 11px; fill: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .alab.grn { fill: var(--pass); } .alab.warn { fill: var(--warn); } .alab.red { fill: var(--fail); } .alab.acc { fill: var(--accent); }
+  .flow { stroke: var(--ink); stroke-width: 2; fill: none; }
+  .flow.grn { stroke: var(--pass); } .flow.acc { stroke: var(--accent); } .flow.warn { stroke: var(--warn); } .flow.red { stroke: var(--fail); }
+  .flow.dashed { stroke-dasharray: 6 5; }
+  .box { fill: var(--surface); stroke: var(--ink); stroke-width: 1.6; }
+  .box.acc { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 2; }
+  .box.grn { fill: var(--pass-tint); stroke: var(--pass); stroke-width: 1.8; }
+  .box.warn { fill: var(--warn-tint); stroke: var(--warn); stroke-width: 1.8; }
+  .box.red  { fill: var(--fail-tint); stroke: var(--fail); stroke-width: 1.8; }
+  .box.mut  { fill: var(--ground); stroke: var(--line); stroke-width: 1.6; }
+  .divider { stroke: var(--line); stroke-width: 1.4; stroke-dasharray: 4 4; }
+  .notes { margin: 12px 0 0; padding-left: 20px; }
+  .notes li { margin: 6px 0; max-width: 78ch; }
+  .notes .g { color: var(--pass); font-weight: 650; } .notes .w { color: var(--warn); font-weight: 650; } .notes .r { color: var(--fail); font-weight: 650; } .notes .a { color: var(--accent); font-weight: 650; }
+  .verdict { margin-top: 24px; background: var(--accent-tint); border: 1px solid var(--accent); border-radius: 12px; padding: 16px 20px; }
+  .verdict p { margin: 0 0 8px; max-width: 78ch; }
+  .verdict p:last-child { margin-bottom: 0; }
+  .verdict strong { color: var(--accent); }
+  footer { margin-top: 42px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; background: var(--accent-tint); padding: 1px 5px; border-radius: 4px; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Study Lockdown Platform · The Bypass Question</p>
+  <h1>Your version, the port, and the leak</h1>
+  <p class="lede">Two questions, one page: how your "keep the number on the phone" idea compares to porting, and — the sharper one — <strong>if the shadow line is a real dialable number, can't the student just hand it out and bypass everything?</strong> Yes, they can, unless the shadow line has no dialable number to give. Here's the whole picture.</p>
+
+  <!-- ===== 1. SIDE BY SIDE ===== -->
+  <section>
+    <div class="sec-head"><span class="n">1</span><h2>Your version vs. the port — side by side</h2></div>
+    <figure>
+      <svg viewBox="0 0 900 340" role="img" aria-label="Left: keeping the public number live on the phone forces call forwarding, which cannot forward texts and cannot be toggled on iPhone. Right: porting the public number to the cloud puts the server in the path, so calls and texts are both controlled on both platforms.">
+        <defs>
+          <marker id="c1-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+          <marker id="c1-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--warn)"/></marker>
+          <marker id="c1-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--fail)"/></marker>
+          <marker id="c1-grn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--pass)"/></marker>
+          <marker id="c1-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker>
+        </defs>
+
+        <!-- LEFT -->
+        <text class="col" x="30" y="28" fill="var(--warn)">YOUR VERSION — public # stays on the phone</text>
+        <rect class="box" x="30" y="44" width="110" height="46" rx="8"/>
+        <text class="lbl" x="85" y="64" text-anchor="middle">Friend</text>
+        <text class="sub" x="85" y="80" text-anchor="middle">dials public #</text>
+
+        <rect class="box mut" x="30" y="120" width="110" height="46" rx="8"/>
+        <text class="lbl" x="85" y="140" text-anchor="middle">Carrier</text>
+        <text class="sub" x="85" y="156" text-anchor="middle">delivers direct</text>
+
+        <rect class="box" x="300" y="120" width="120" height="46" rx="8"/>
+        <text class="lbl" x="360" y="140" text-anchor="middle">Student's phone</text>
+        <text class="sub" x="360" y="156" text-anchor="middle">public # lives here</text>
+
+        <rect class="box warn" x="170" y="196" width="140" height="50" rx="8"/>
+        <text class="lbl" x="240" y="216" text-anchor="middle">Your server</text>
+        <text class="sub" x="240" y="232" text-anchor="middle">only if forwarding on</text>
+
+        <line class="flow" x1="85" y1="90" x2="85" y2="116" marker-end="url(#c1-ink)"/>
+        <line class="flow" x1="140" y1="143" x2="296" y2="143" marker-end="url(#c1-ink)"/>
+        <path class="flow warn dashed" d="M300 150 L240 150 L240 192" marker-end="url(#c1-warn)"/>
+        <text class="alab warn" x="250" y="185">fwd (voice only)</text>
+
+        <path class="flow red dashed" d="M85 166 L85 270 L360 270 L360 170" marker-end="url(#c1-red)"/>
+        <text class="alab red" x="120" y="262">texts can't forward — land on phone</text>
+
+        <text class="alab red" x="30" y="300">✕ texts leak · ✕ iPhone can't toggle forwarding</text>
+        <text class="alab" x="30" y="320">= this is call forwarding (Method 2)</text>
+
+        <!-- divider -->
+        <line class="divider" x1="470" y1="20" x2="470" y2="330"/>
+
+        <!-- RIGHT -->
+        <text class="col" x="500" y="28" fill="var(--pass)">THE PORT — public # moves to the cloud</text>
+        <rect class="box" x="500" y="44" width="110" height="46" rx="8"/>
+        <text class="lbl" x="555" y="64" text-anchor="middle">Friend</text>
+        <text class="sub" x="555" y="80" text-anchor="middle">dials public #</text>
+
+        <rect class="box acc" x="500" y="120" width="120" height="46" rx="8"/>
+        <text class="lbl" x="560" y="140" text-anchor="middle">Twilio</text>
+        <text class="sub" x="560" y="156" text-anchor="middle">public # in cloud</text>
+
+        <rect class="box acc" x="660" y="118" width="110" height="50" rx="8"/>
+        <text class="lbl" x="715" y="139" text-anchor="middle">Your server</text>
+        <text class="sub" x="715" y="155" text-anchor="middle">every call/text</text>
+
+        <rect class="box grn" x="790" y="118" width="96" height="50" rx="8"/>
+        <text class="lbl" x="838" y="139" text-anchor="middle">Phone</text>
+        <text class="sub" x="838" y="155" text-anchor="middle">shadow line</text>
+
+        <line class="flow" x1="555" y1="90" x2="555" y2="116" marker-end="url(#c1-ink)"/>
+        <line class="flow acc" x1="620" y1="143" x2="656" y2="143" marker-end="url(#c1-acc)"/>
+        <line class="flow grn" x1="770" y1="143" x2="786" y2="143" marker-end="url(#c1-grn)"/>
+
+        <text class="alab grn" x="500" y="300">✓ calls &amp; texts both controlled · ✓ works on iPhone</text>
+        <text class="alab" x="500" y="320">= the server is always in the path</text>
+      </svg>
+      <figcaption>Left: because the public number is still live on the phone, only forwarding can divert it — and forwarding drops texts and can't be switched on iPhone. Right: porting puts the server permanently in front of the number, so both calls and texts are controlled on both platforms. This is why the port wins — but it introduces the leak below.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===== 2. THE LEAK ===== -->
+  <section>
+    <div class="sec-head"><span class="n">2</span><h2>The leak you spotted — a dialable shadow number is a bypass</h2></div>
+    <figure>
+      <svg viewBox="0 0 820 250" role="img" aria-label="If the shadow line is voice-capable, outbound native calls show the shadow number as caller ID; a friend saves it and calls the shadow number directly, which rings the phone and bypasses the server entirely.">
+        <defs>
+          <marker id="c2-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--fail)"/></marker>
+          <marker id="c2-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+        </defs>
+        <rect class="box" x="20" y="90" width="150" height="60" rx="9"/>
+        <text class="lbl" x="95" y="114" text-anchor="middle">Student's phone</text>
+        <text class="sub" x="95" y="132" text-anchor="middle">native dialer → shadow SIM</text>
+
+        <rect class="box red" x="330" y="40" width="180" height="56" rx="9"/>
+        <text class="lbl" x="420" y="64" text-anchor="middle">Friend sees shadow #</text>
+        <text class="sub" x="420" y="82" text-anchor="middle">as caller ID · saves it</text>
+
+        <rect class="box red" x="620" y="90" width="180" height="60" rx="9"/>
+        <text class="lbl b" x="710" y="114" text-anchor="middle" fill="var(--fail)">Bypass</text>
+        <text class="sub" x="710" y="132" text-anchor="middle">dials shadow # directly →</text>
+        <text class="sub" x="710" y="146" text-anchor="middle">rings phone, server skipped</text>
+
+        <path class="flow red" d="M170 108 L326 70 " marker-end="url(#c2-red)"/>
+        <text class="alab red" x="205" y="86">outbound call</text>
+
+        <path class="flow red" d="M510 74 L560 74 L560 116 L616 116" marker-end="url(#c2-red)"/>
+        <text class="alab red" x="540" y="104">later</text>
+
+        <path class="flow red dashed" d="M620 128 L400 128 L180 128" marker-end="url(#c2-red)"/>
+        <text class="alab red" x="300" y="120">rings the shadow line directly — no server, no DND</text>
+
+        <text class="alab" x="20" y="196">On Android this is containable: your agent (device-owner dialer/screener) routes outbound as the public #,</text>
+        <text class="alab" x="20" y="214">and screens direct-to-shadow calls during DND. On iPhone there is NO on-device fix — the leak is a full bypass.</text>
+      </svg>
+      <figcaption>The vulnerability is the dialable shadow number itself: it shows up on outbound caller ID and can be called directly. Android's agent contains it; iPhone cannot, because Apple lets no app reroute outbound calls or screen inbound ones. So on iPhone, a voice-capable shadow line means the product is bypassable.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===== 3. THE FIX ===== -->
+  <section>
+    <div class="sec-head"><span class="n">3</span><h2>The fix — a data-only shadow line, app as the only phone</h2></div>
+    <figure>
+      <svg viewBox="0 0 820 254" role="img" aria-label="With a data-only shadow line there is no dialable shadow number. The phone gets LTE data from the data-only line, and all calls and texts go through your app over the public number, which always shows the public number and cannot be called around.">
+        <defs>
+          <marker id="c3-grn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--pass)"/></marker>
+          <marker id="c3-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker>
+        </defs>
+        <rect class="box grn" x="20" y="40" width="180" height="58" rx="9"/>
+        <text class="lbl" x="110" y="64" text-anchor="middle">Data-only shadow line</text>
+        <text class="sub" x="110" y="82" text-anchor="middle">LTE + data · NO dialable #</text>
+
+        <rect class="box" x="20" y="140" width="180" height="66" rx="9"/>
+        <text class="lbl" x="110" y="164" text-anchor="middle">Student's phone</text>
+        <text class="sub" x="110" y="182" text-anchor="middle">your app = the only</text>
+        <text class="sub" x="110" y="196" text-anchor="middle">dialer &amp; messenger</text>
+
+        <rect class="box acc" x="330" y="118" width="150" height="60" rx="9"/>
+        <text class="lbl" x="405" y="142" text-anchor="middle">Your server</text>
+        <text class="sub" x="405" y="160" text-anchor="middle">+ Twilio (public #)</text>
+
+        <rect class="box grn" x="600" y="40" width="200" height="58" rx="9"/>
+        <text class="lbl" x="700" y="64" text-anchor="middle">Outbound = public #</text>
+        <text class="sub" x="700" y="82" text-anchor="middle">nothing else to reveal</text>
+
+        <rect class="box grn" x="600" y="140" width="200" height="58" rx="9"/>
+        <text class="lbl" x="700" y="164" text-anchor="middle">Inbound = via server</text>
+        <text class="sub" x="700" y="182" text-anchor="middle">no shadow # to dial</text>
+
+        <line class="flow grn" x1="110" y1="98" x2="110" y2="136" marker-end="url(#c3-grn)"/>
+        <text class="alab grn" x="118" y="122">data only</text>
+        <line class="flow acc" x1="200" y1="168" x2="326" y2="150" marker-end="url(#c3-acc)"/>
+        <text class="alab acc" x="215" y="150">VoIP (calls+texts)</text>
+        <line class="flow grn" x1="480" y1="135" x2="596" y2="80" marker-end="url(#c3-grn)"/>
+        <line class="flow grn" x1="480" y1="160" x2="596" y2="168" marker-end="url(#c3-grn)"/>
+
+        <text class="alab warn" x="20" y="238">⚠ Must solve deliberately: 911 / emergency calling on a data-only line (E911-registered VoIP and/or native fallback).</text>
+      </svg>
+      <figcaption>Remove the dialable shadow number entirely: the shadow line carries only data, and your app is the sole way to place or receive calls and texts, always over the public number. There is nothing to leak and nothing to dial around — the same on iPhone and Android. The one hard requirement is a correct emergency-calling solution, which must be designed in, not assumed.</figcaption>
+    </figure>
+    <ul class="notes">
+      <li><span class="g">Leak closed on both platforms:</span> no voice number on the SIM means outbound can only go through your app (public # as caller ID) and there's no shadow number for anyone to call.</li>
+      <li><span class="a">This is required on iPhone,</span> where you can't reroute outbound or screen inbound — data-only removes the problem at its root instead of trying to patch it on-device.</li>
+      <li><span class="w">Cost of the fix:</span> you're now building a softphone (in-app VoIP calling/texting), call quality rides on data, and native Phone/Messages go away (which lines up with the MDM app-hiding anyway).</li>
+      <li><span class="r">Do not hand-wave 911:</span> data-only lines may not support native emergency dialing — solve it with E911-registered VoIP and/or a verified native fallback, with telecom/regulatory guidance.</li>
+    </ul>
+  </section>
+
+  <div class="verdict">
+    <p><strong>Recommendation:</strong> keep the port (it's the only design that controls both calls and texts on iPhone), but make the shadow line <strong>data-only</strong> and your app the only dialer and messenger. That closes the exact bypass you spotted — with no dialable shadow number, there is nothing to hand out and nothing to call around, identically on both platforms.</p>
+    <p><strong>Phasing:</strong> a voice-capable shadow line is fine for the MVP and for testing the routing (on Android it's already well-contained by the device-owner agent). Move to data-only + in-app calling for the shipping product, because bypass-resistance is the entire point of the platform — and solve emergency calling as a first-class requirement before launch.</p>
+  </div>
+
+  <footer>Study Lockdown MDM platform · shadow-number leak analysis, Aug 2026 · pairs with telephony-gateway threat model and routing-methods.</footer>
+</div>
